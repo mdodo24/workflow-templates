@@ -2,11 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   generateName: example-2-
-  annotations:
-    argocd.argoproj.io/hook: PreSync
   labels:
     workflows.argoproj.io/archive-strategy: "false"
   annotations:
+    argocd.argoproj.io/hook: Sync
     workflows.argoproj.io/description: |
       This is a simple hello world example.
 spec:
