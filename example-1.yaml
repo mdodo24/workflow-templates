@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: example-1-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a simple hello world example.
+spec:
+  entrypoint: echo
+  templates:
+  - name: echo
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo hoooray!"]

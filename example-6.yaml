@@ -1,0 +1,75 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: example-5-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a simple hello world example.
+spec:
+  entrypoint: promotion-pipeline
+  arguments:
+    parameters:
+    - name: manifest
+  templates:
+    - name: promotion-pipeline
+      dag:
+        tasks:
+        - name: rc
+          template: rc-template
+          arguments:
+            parameters:
+            - name: manifest
+              value: "{{workflow.parameters.manifest}}"
+        - name: jira-create
+          dependencies: [rc]
+          template: jira-create
+          arguments:
+            parameters:
+            - name: manifest
+              value: "{{workflow.parameters.manifest}}"
+        - name: jira-close
+          dependencies: [jira-create]
+          template: jira-close
+          arguments:
+            parameters:
+            - name: manifest
+              value: "{{workflow.parameters.manifest}}"
+            artifacts:
+            - name: jira
+              from: "{{tasks.jira-create.outputs.artifacts.jira-create-artifact}}"
+    - name: rc-template
+      inputs:
+        parameters:
+        - name: manifest
+      container:
+        image: relactions-cli:v0.0.2
+        imagePullPolicy: Never
+        command: ["/app/relactions"]
+        args: ["rc","validate", "-m", "{{inputs.parameters.manifest}}"]
+    - name: jira-create
+      inputs:
+        parameters:
+        - name: manifest
+      container:
+        image: relactions-cli:v0.0.2
+        imagePullPolicy: Never
+        command: ["/app/relactions"]
+        args: ["jira","create", "-m", "{{inputs.parameters.manifest}}", "tee", "/tmp/jira-create.json"]
+      outputs:
+        artifacts:
+        - name: jira-create-artifact
+          path: /tmp/jira-create.json
+    - name: jira-close
+      inputs:
+        artifacts:
+        - name: jira-create-artifact
+          path: /tmp/jira-close-input
+        parameters:
+        - name: manifest
+      container:
+        image: relactions-cli:v0.0.2
+        imagePullPolicy: Never
+        command: ["/app/relactions"]
+        args: ["jira","close", "-m", "{{inputs.parameters.manifest}}", "-j", "{{inputs.parameters.jira}}"]

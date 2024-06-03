@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: example-4-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a simple hello world example.
+spec:
+  entrypoint: promotion-pipeline
+  arguments:
+    parameters:
+    - name: manifest
+    - name: jira
+  templates:
+    - name: promotion-pipeline
+      steps:
+      - - name: rc
+          template: rc-template
+          arguments:
+            parameters:
+            - name: manifest
+              value: "{{workflow.parameters.manifest}}"
+
+      - - name: jira
+          template: jira-template
+          arguments:
+            parameters:
+            - name: manifest
+              value: "{{workflow.parameters.manifest}}"
+            - name: jira
+              value: "{{workflow.parameters.jira}}"
+    - name: jira-template
+      inputs:
+        parameters:
+        - name: manifest
+        - name: jira
+      container:
+        image: relactions-cli:latest
+        imagePullPolicy: Never
+        command: ["/app/relactions"]
+        args: ["jira","close", "-m", "{{inputs.parameters.manifest}}", "-j", "{{inputs.parameters.jira}}"]
+    - name: rc-template
+      inputs:
+        parameters:
+        - name: manifest
+      container:
+        image: relactions-cli:latest
+        imagePullPolicy: Never
+        command: ["/app/relactions"]
+        args: ["rc","validate", "-m", "{{inputs.parameters.manifest}}"]
